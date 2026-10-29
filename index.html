@@ -165,7 +165,7 @@ body { margin: 0; }
   <section class="panel privacy">
     <h2>しくみ</h2>
     <ul>
-      <li>Claude Codeの分は、Macが毎日12時と23時50分に自動で集計しています（スリープ中なら起きたときに実行）。</li>
+      <li>Claude Codeの分は、Macで動かした分を毎日12時と23時50分に自動で集計しています（スリープ中なら起きたときに実行）。クラウドで動かした分は、Claudeのデータエクスポートから取り込みます。</li>
       <li>Claude（スマホ・Mac）の分は、claude.aiのデータエクスポートのzipをMacの「ai-kusa-inbox」フォルダに入れると、次の集計で反映されます。</li>
       <li>このページに載っているのは日付ごとの分数だけです。会話の中身はMacの外に出ていません。</li>
       <li>時間は、メッセージ同士の間隔が10分以内なら続けて触っていたとみなして計算した目安です。</li>
@@ -176,13 +176,13 @@ body { margin: 0; }
 <script>
 (function () {
   var filter = "all";
-  var data = { claude: {}, code: {} };
+  var data = { claude: {}, code: {}, cloud: {} };
 
   function ymd(d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function minutesFor(d) {
-    var a = data.claude[d] || 0, b = data.code[d] || 0;
+    var a = data.claude[d] || 0, b = (data.code[d] || 0) + (data.cloud[d] || 0);
     return filter === "claude" ? a : filter === "code" ? b : a + b;
   }
   function level(m) { return m <= 0 ? 0 : m < 15 ? 1 : m < 45 ? 2 : m < 90 ? 3 : 4; }
@@ -245,7 +245,7 @@ body { margin: 0; }
     var b = e.target.closest(".c"); if (!b || !b.dataset.d) return;
     document.querySelectorAll(".c.sel").forEach(function (x) { x.classList.remove("sel"); });
     b.classList.add("sel");
-    var d = b.dataset.d, a = data.claude[d] || 0, c = data.code[d] || 0;
+    var d = b.dataset.d, a = data.claude[d] || 0, c = (data.code[d] || 0) + (data.cloud[d] || 0);
     var dt = new Date(d + "T00:00:00");
     var head = (dt.getMonth() + 1) + "月" + dt.getDate() + "日（" + "日月火水木金土"[dt.getDay()] + "）";
     var el = document.getElementById("detail");
@@ -265,7 +265,7 @@ body { margin: 0; }
   fetch("data.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
     .then(function (j) {
-      data = { claude: j.claude || {}, code: j.code || {} };
+      data = { claude: j.claude || {}, code: j.code || {}, cloud: j.cloud || {} };
       var u = document.getElementById("updated");
       if (j.updated) {
         var t = new Date(j.updated);
