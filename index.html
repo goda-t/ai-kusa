@@ -61,6 +61,9 @@ header p { margin: 6px 0 0; color: var(--muted); }
   font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--muted);
   padding: 5px 12px; border-radius: 999px; cursor: pointer;
 }
+.seg { max-width: 100%; overflow-x: auto; }
+.seg button { white-space: nowrap; flex: none; }
+@media (max-width: 420px) { .seg button { padding: 5px 9px; font-size: 12.5px; } }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 700; }
 .seg button:focus-visible, .btn:focus-visible, .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-fg); font-weight: 700; }
@@ -137,6 +140,7 @@ body { margin: 0; }
         <button id="f-all" data-f="all" aria-pressed="true">合計</button>
         <button id="f-claude" data-f="claude" aria-pressed="false">Claude</button>
         <button id="f-code" data-f="code" aria-pressed="false">Claude Code</button>
+        <button id="f-device" data-f="device" aria-pressed="false">Mac・iPhone</button>
       </div>
       <span class="updated" id="updated">読み込み中…</span>
     </div>
@@ -168,7 +172,8 @@ body { margin: 0; }
       <li>Claude Codeの分は、Macで動かした分を毎日12時と23時50分に自動で集計しています（スリープ中なら起きたときに実行）。クラウドで動かした分は、Claudeのデータエクスポートから取り込みます。</li>
       <li>Claude（スマホ・Mac）の分は、claude.aiのデータエクスポートのzipをMacの「ai-kusa-inbox」フォルダに入れると、次の集計で反映されます。</li>
       <li>このページに載っているのは日付ごとの分数だけです。会話の中身はMacの外に出ていません。</li>
-      <li>時間は、メッセージ同士の間隔が10分以内なら続けて触っていたとみなして計算した目安です。</li>
+      <li>「Mac・iPhone」は、Claudeアプリを手前で開いていた時間です。Macは1分ごとの確認（3分以上操作がなければ数えない）、iPhoneはアプリを開いた・閉じた時刻から測っています。</li>
+      <li>Claude・Claude Codeの時間は、メッセージ同士の間隔が10分以内なら続けて触っていたとみなして計算した目安です。合計では、アプリ時間と重なる分を二重に数えないよう、その日の大きいほうを採用しています。</li>
     </ul>
   </section>
 </div>
@@ -176,14 +181,28 @@ body { margin: 0; }
 <script>
 (function () {
   var filter = "all";
-  var data = { claude: {}, code: {}, cloud: {} };
+  var data = { claude: {}, code: {}, cloud: {}, mac: {}, iphone: {} };
 
   function ymd(d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
+  function parts(d) {
+    var p = {
+      claude: data.claude[d] || 0,
+      local: data.code[d] || 0,
+      cloud: data.cloud[d] || 0,
+      mac: data.mac[d] || 0,
+      iphone: data.iphone[d] || 0
+    };
+    p.code = p.local + p.cloud;
+    p.device = p.mac + p.iphone;
+    // Mac・iPhoneのアプリ時間は、エクスポート由来の時間と重なるので大きいほうを採用
+    p.total = p.local + Math.max(p.claude + p.cloud, p.device);
+    return p;
+  }
   function minutesFor(d) {
-    var a = data.claude[d] || 0, b = (data.code[d] || 0) + (data.cloud[d] || 0);
-    return filter === "claude" ? a : filter === "code" ? b : a + b;
+    var p = parts(d);
+    return filter === "claude" ? p.claude : filter === "code" ? p.code : filter === "device" ? p.device : p.total;
   }
   function level(m) { return m <= 0 ? 0 : m < 15 ? 1 : m < 45 ? 2 : m < 90 ? 3 : 4; }
   function fmt(m) {
@@ -245,12 +264,13 @@ body { margin: 0; }
     var b = e.target.closest(".c"); if (!b || !b.dataset.d) return;
     document.querySelectorAll(".c.sel").forEach(function (x) { x.classList.remove("sel"); });
     b.classList.add("sel");
-    var d = b.dataset.d, a = data.claude[d] || 0, c = (data.code[d] || 0) + (data.cloud[d] || 0);
+    var d = b.dataset.d, p = parts(d);
     var dt = new Date(d + "T00:00:00");
     var head = (dt.getMonth() + 1) + "月" + dt.getDate() + "日（" + "日月火水木金土"[dt.getDay()] + "）";
     var el = document.getElementById("detail");
-    if (!a && !c) { el.textContent = head + "：記録なし"; return; }
-    el.innerHTML = head + "：合計 <b>" + fmt(a + c) + "</b>　Claude " + fmt(a) + " ／ Claude Code " + fmt(c);
+    if (!p.total) { el.textContent = head + "：記録なし"; return; }
+    el.innerHTML = head + "：合計 <b>" + fmt(p.total) + "</b>　Claude " + fmt(p.claude) + " ／ Claude Code " + fmt(p.code) +
+      (p.device ? " ／ アプリ時間 " + fmt(p.device) + "（Mac " + fmt(p.mac) + "・iPhone " + fmt(p.iphone) + "）" : "");
   });
 
   document.querySelectorAll(".seg button").forEach(function (b) {
@@ -265,7 +285,7 @@ body { margin: 0; }
   fetch("data.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
     .then(function (j) {
-      data = { claude: j.claude || {}, code: j.code || {}, cloud: j.cloud || {} };
+      data = { claude: j.claude || {}, code: j.code || {}, cloud: j.cloud || {}, mac: j.mac || {}, iphone: j.iphone || {} };
       var u = document.getElementById("updated");
       if (j.updated) {
         var t = new Date(j.updated);
