@@ -60,7 +60,8 @@ header p { margin: 6px 0 0; color: var(--muted); }
   padding: 5px 12px; border-radius: 999px; cursor: pointer;
 }
 .seg { max-width: 100%; overflow-x: auto; }
-.seg button { white-space: nowrap; flex: none; }
+.seg button { white-space: nowrap; flex: none; display: inline-flex; flex-direction: column; align-items: center; }
+.seg button::after { content: attr(data-label); font-weight: 700; height: 0; visibility: hidden; overflow: hidden; }
 @media (max-width: 420px) { .seg button { padding: 5px 9px; font-size: 12.5px; } }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 700; }
 .seg button:focus-visible, .btn:focus-visible, .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -77,8 +78,13 @@ header p { margin: 6px 0 0; color: var(--muted); }
 .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 10px; justify-content: space-between; }
 .legend .keys { display: flex; align-items: center; gap: 4px; }
 .legend .c { cursor: default; }
-.detail { margin-top: 10px; font-size: 14px; min-height: 1.7em; }
-.detail b { font-family: var(--f-num); }
+.detail { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.d-date { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
+.d-rows { display: grid; grid-template-columns: 1fr auto; column-gap: 24px; row-gap: 4px; margin: 0; font-size: 14px; max-width: 300px; }
+.d-rows dt { color: var(--muted); }
+.d-rows dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.d-rows .tot { color: var(--fg); font-weight: 700; }
+.d-rows .in { padding-left: 1.2em; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 560px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .stat { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
@@ -154,7 +160,17 @@ body { margin: 0; }
       <span id="rangeLabel"></span>
       <span class="keys">少 <i class="c"></i><i class="c l1"></i><i class="c l2"></i><i class="c l3"></i><i class="c l4"></i> 多</span>
     </div>
-    <div class="detail" id="detail">マスをタップすると、その日の時間が出ます。</div>
+    <div class="detail" id="detail">
+      <p class="d-date" id="dDate">マスをタップすると、その日の時間が出ます</p>
+      <dl class="d-rows">
+        <dt class="tot">合計</dt><dd class="tot" id="vTotal">—</dd>
+        <dt>Claude</dt><dd id="vClaude">—</dd>
+        <dt>Claude Code</dt><dd id="vCode">—</dd>
+        <dt>アプリ時間</dt><dd id="vApp">—</dd>
+        <dt class="in">Mac</dt><dd id="vMac">—</dd>
+        <dt class="in">iPhone</dt><dd id="vIphone">—</dd>
+      </dl>
+    </div>
   </section>
 
   <section class="stats" aria-label="集計">
@@ -258,24 +274,38 @@ body { margin: 0; }
     document.getElementById("rangeLabel").textContent = "直近1年（" + ymd(d0).replace(/-/g, "/") + "〜）";
   }
 
+  var selDay = null;
+  function showDay(d) {
+    var p = parts(d), dt = new Date(d + "T00:00:00");
+    function f(m) { return m ? fmt(m) : "0分"; }
+    document.getElementById("dDate").textContent = (dt.getMonth() + 1) + "月" + dt.getDate() + "日（" + "日月火水木金土"[dt.getDay()] + "）" + (p.total ? "" : "　記録なし");
+    document.getElementById("vTotal").textContent = f(p.total);
+    document.getElementById("vClaude").textContent = f(p.claude);
+    document.getElementById("vCode").textContent = f(p.code);
+    document.getElementById("vApp").textContent = f(p.device);
+    document.getElementById("vMac").textContent = f(p.mac);
+    document.getElementById("vIphone").textContent = f(p.iphone);
+  }
+  function markSel() {
+    document.querySelectorAll(".c.sel").forEach(function (x) { x.classList.remove("sel"); });
+    if (!selDay) return;
+    var c = document.querySelector('.c[data-d="' + selDay + '"]');
+    if (c) c.classList.add("sel");
+  }
   document.getElementById("cells").addEventListener("click", function (e) {
     var b = e.target.closest(".c"); if (!b || !b.dataset.d) return;
-    document.querySelectorAll(".c.sel").forEach(function (x) { x.classList.remove("sel"); });
-    b.classList.add("sel");
-    var d = b.dataset.d, p = parts(d);
-    var dt = new Date(d + "T00:00:00");
-    var head = (dt.getMonth() + 1) + "月" + dt.getDate() + "日（" + "日月火水木金土"[dt.getDay()] + "）";
-    var el = document.getElementById("detail");
-    if (!p.total) { el.textContent = head + "：記録なし"; return; }
-    el.innerHTML = head + "：合計 <b>" + fmt(p.total) + "</b>　Claude " + fmt(p.claude) + " ／ Claude Code " + fmt(p.code) +
-      (p.device ? " ／ アプリ時間 " + fmt(p.device) + "（Mac " + fmt(p.mac) + "・iPhone " + fmt(p.iphone) + "）" : "");
+    selDay = b.dataset.d;
+    markSel();
+    showDay(selDay);
   });
 
   document.querySelectorAll(".seg button").forEach(function (b) {
+    b.dataset.label = b.textContent;
     b.addEventListener("click", function () {
       filter = b.dataset.f;
       document.querySelectorAll(".seg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
       render();
+      markSel();
     });
   });
 
@@ -294,6 +324,10 @@ body { margin: 0; }
         }
       } else { u.textContent = ""; }
       render();
+      // 最初は今日の内訳を出しておく
+      if (!selDay) { selDay = ymd(new Date()); }
+      markSel();
+      showDay(selDay);
     })
     .catch(function () {
       var u = document.getElementById("updated");
