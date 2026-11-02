@@ -46,27 +46,28 @@ body {
   font-size: 15px; line-height: 1.7;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 28px 56px;
+  padding-block: 32px 56px;
 }
-.wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+.wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 header h1 {
-  font-family: var(--f-display); font-weight: 700; font-size: clamp(32px, 7.5vw, 48px);
-  line-height: 1.1; margin: 0; letter-spacing: 0.02em; text-wrap: balance;
+  font-family: var(--f-display); font-weight: 600; font-size: 24px;
+  line-height: 1.2; margin: 0; letter-spacing: 0.01em;
 }
-header h1 span { color: var(--accent); }
 header p { margin: 6px 0 0; color: var(--muted); }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; min-width: 0; }
+@media (min-width: 720px) { .panel { padding: 24px; } }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.seg { display: inline-flex; background: var(--g0); border-radius: 10px; padding: 4px; gap: 4px; }
 .seg button {
-  font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--muted);
-  padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 13px; line-height: 20px; border: 0; background: transparent; color: var(--muted);
+  padding: 4px 12px; border-radius: 6px; cursor: pointer;
 }
 .seg { max-width: 100%; overflow-x: auto; }
 .seg button { white-space: nowrap; flex: none; display: inline-flex; flex-direction: column; align-items: center; }
-.seg button::after { content: attr(data-label); font-weight: 700; height: 0; visibility: hidden; overflow: hidden; }
-@media (max-width: 420px) { .seg button { padding: 5px 9px; font-size: 12.5px; } }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 700; }
+.seg button::after { content: attr(data-label); font-weight: 600; height: 0; visibility: hidden; overflow: hidden; }
+@media (max-width: 420px) { .seg button { padding: 4px 8px; font-size: 12px; } }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: 0 1px 2px rgba(23, 33, 27, 0.08); }
+.seg button:hover { color: var(--fg); }
 .seg button:focus-visible, .btn:focus-visible, .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-fg); font-weight: 700; }
 .gridscroll { overflow-x: auto; padding-bottom: 6px; }
@@ -78,29 +79,40 @@ header p { margin: 6px 0 0; color: var(--muted); }
 .c.l1 { background: var(--g1); } .c.l2 { background: var(--g2); } .c.l3 { background: var(--g3); } .c.l4 { background: var(--g4); }
 .c.out { visibility: hidden; }
 .c.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
-.period { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+.period { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px; color: var(--muted); }
 .period select { font: inherit; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; }
 .period select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #rangeLabel { font-variant-numeric: tabular-nums; }
-.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 10px; justify-content: space-between; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 12px; justify-content: space-between; }
 .legend .keys { display: flex; align-items: center; gap: 4px; }
 .legend .c { cursor: default; }
-.detail { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
-.d-date { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
-.d-rows { display: grid; grid-template-columns: 1fr auto; column-gap: 24px; row-gap: 4px; margin: 0; font-size: 14px; max-width: 300px; }
+.detail { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
+.d-date { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+.d-rows { display: grid; grid-template-columns: 1fr auto; column-gap: 32px; row-gap: 4px; margin: 0; font-size: 14px; }
+@media (min-width: 720px) { .d-rows { max-width: 440px; } }
 .d-rows dt { color: var(--muted); }
 .d-rows dd { margin: 0; display: grid; grid-template-columns: 4.2em 2.8em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .d-rows dd span { text-align: right; }
 .d-date { font-variant-numeric: tabular-nums; white-space: pre; }
-.d-rows .tot { color: var(--fg); font-weight: 700; }
-.d-rows .in { padding-left: 1.2em; }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-@media (max-width: 560px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.stat { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
-.stat .k { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
-.stat .v { font-family: var(--f-num); font-weight: 700; font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.stat .v small { font-family: var(--f-body); font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; }
-h2 { font-family: var(--f-display); font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+.d-rows .tot { color: var(--fg); font-weight: 600; }
+.d-rows .in { padding-left: 16px; }
+.stats { display: block; }
+.stat.lead-stat .v { font-size: 32px; }
+.stat.lead-stat { flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; }
+.lead-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.avg { font-size: 12px; line-height: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.avg span { color: var(--fg); }
+.side { display: grid; grid-template-columns: auto auto; column-gap: 16px; row-gap: 8px; margin: 0; padding-left: 24px; border-left: 1px solid var(--line); font-size: 13px; line-height: 20px; align-items: baseline; }
+.side dt { color: var(--muted); }
+.side dd { margin: 0; text-align: right; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.side dd small { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 2px; }
+@media (max-width: 420px) { .stat.lead-stat { gap: 16px; padding: 16px; } .side { padding-left: 16px; column-gap: 12px; } }
+.stat { padding: 16px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-width: 0; }
+.stat .k { font-size: 12px; line-height: 16px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.stat .k::before, .privacy li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 2px; background: var(--g3); }
+.stat .v { font-family: var(--f-num); font-weight: 600; font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .v small { font-family: var(--f-body); font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 4px; }
+h2 { font-family: var(--f-display); font-size: 15px; font-weight: 600; margin: 0 0 4px; }
 .lead { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
 .drop {
   border: 2px dashed var(--line); border-radius: 12px; padding: 22px 16px; text-align: center;
@@ -127,24 +139,26 @@ h2 { font-family: var(--f-display); font-size: 20px; font-weight: 700; margin: 0
 }
 .copy { font: inherit; font-size: 12px; margin-top: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
 .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
-.privacy { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.privacy ul { margin: 0; padding-left: 1.2em; }
-.privacy li + li { margin-top: 4px; }
+.privacy { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); }
+.privacy h2 { color: var(--fg); }
+.privacy ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.privacy li { display: flex; gap: 12px; align-items: baseline; line-height: 1.7; }
+.privacy li::before { background: var(--g1); transform: translateY(-1px); }
 @media (prefers-reduced-motion: no-preference) { .c { transition: background-color .25s; } }
 </style>
 <style>
 :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; }
 .updated { font-size: 13px; color: var(--muted); }
-.updated.stale { color: var(--warn-fg); background: var(--warn-bg); padding: 2px 10px; border-radius: 999px; font-weight: 700; }
+.updated { font-variant-numeric: tabular-nums; }
+.updated.stale { color: var(--warn-fg); background: var(--warn-bg); padding: 2px 8px; border-radius: 6px; }
 .empty { font-size: 14px; color: var(--muted); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>AIの<span>草</span></h1>
-    <p>ClaudeとClaude Codeを触った時間を、1日1マスで記録しています。</p>
+    <h1>AIの草</h1>
   </header>
 
   <section class="panel" aria-label="利用カレンダー">
@@ -188,20 +202,29 @@ body { margin: 0; }
   </section>
 
   <section class="stats" aria-label="集計">
-    <div class="stat"><div class="k" id="kTotal">直近1年の合計</div><div class="v" id="sTotal">0<small>時間</small></div></div>
-    <div class="stat"><div class="k" id="kDays">触った日数</div><div class="v" id="sDays">0<small>日</small></div></div>
-    <div class="stat"><div class="k">いまの連続記録</div><div class="v" id="sStreak">0<small>日</small></div></div>
-    <div class="stat"><div class="k" id="kBest">最長連続記録</div><div class="v" id="sBest">0<small>日</small></div></div>
+    <div class="stat lead-stat">
+      <div class="lead-main">
+        <div class="k" id="kTotal">直近1年の合計</div>
+        <div class="v" id="sTotal">0<small>時間</small></div>
+        <div class="avg">触った日の平均 <span id="sAvg">—</span></div>
+      </div>
+      <dl class="side">
+        <dt id="kDays">触った日数</dt><dd id="sDays">0<small>日</small></dd>
+        <dt>いまの連続</dt><dd id="sStreak">0<small>日</small></dd>
+        <dt id="kBest">最長連続</dt><dd id="sBest">0<small>日</small></dd>
+      </dl>
+    </div>
   </section>
 
   <section class="panel privacy">
     <h2>しくみ</h2>
     <ul>
-      <li>毎日12時と23時50分に、Macが自動で集計してこのページを更新しています（スリープ中なら起きたときに実行）。</li>
-      <li>Claude Codeは、Macで動かした分の作業ログから数えています。</li>
-      <li>「Mac・iPhone」は、Claudeアプリを手前で開いていた時間です。Macは1分ごとの確認（3分以上操作がなければ数えない）、iPhoneはアプリを開いた・閉じた時刻から測っています。</li>
-      <li>「Claude」は、claude.aiのデータエクスポートから、メッセージの間隔をもとに推定した時間です（2026年10月30日まで取り込み済み）。合計では、アプリ時間と重なる分を二重に数えないよう、その日の大きいほうを採用しています。</li>
-      <li>このページに載っているのは日付ごとの分数だけです。会話の中身はMacの外に出ていません。</li>
+      <li>毎日12:00と23:50に、Macが集計してこのページを更新します（スリープ中なら起きたときに実行）</li>
+      <li>Claude Code：Macで動かした分の作業ログから</li>
+      <li>Mac・iPhone：Claudeアプリを手前で開いていた時間。Macは1分ごとに確認し、3分以上操作がなければ数えません</li>
+      <li>Claude：claude.aiのデータエクスポートから、メッセージの間隔で推定（2026年10月30日まで取り込み済み）</li>
+      <li>合計は、アプリ時間と重なる分を二重に数えないよう、その日の大きいほうを採用</li>
+      <li>載っているのは日付ごとの分数だけで、会話の中身はMacの外に出ていません</li>
     </ul>
   </section>
 </div>
@@ -315,12 +338,13 @@ body { margin: 0; }
     while (minutesFor(ymd(cur)) > 0) { streak++; cur.setDate(cur.getDate() - 1); }
     var hrs = total / 60;
     setStat("sTotal", hrs < 10 ? hrs.toFixed(1) : Math.round(hrs).toLocaleString("ja-JP"), "時間");
+    document.getElementById("sAvg").textContent = days ? fmt(total / days) : "—";
     setStat("sDays", days, "日");
     setStat("sStreak", streak, "日");
     setStat("sBest", best, "日");
     document.getElementById("kTotal").textContent = R.name + "の合計";
-    document.getElementById("kDays").textContent = R.name + "に触った日数";
-    document.getElementById("kBest").textContent = R.name + "の最長連続記録";
+    document.getElementById("kDays").textContent = "触った日数";
+    document.getElementById("kBest").textContent = "最長連続";
     document.getElementById("rangeLabel").textContent = ymd(R.from).replace(/-/g, "/") + "〜" + ymd(R.to).replace(/-/g, "/");
   }
 
