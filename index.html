@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>AIの草</title>
+<meta name="apple-mobile-web-app-title" content="AIの草">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <style>
 /* Layout: one column, the grass grid is the hero; stats under it, import steps below. */
 :root {
@@ -75,6 +78,10 @@ header p { margin: 6px 0 0; color: var(--muted); }
 .c.l1 { background: var(--g1); } .c.l2 { background: var(--g2); } .c.l3 { background: var(--g3); } .c.l4 { background: var(--g4); }
 .c.out { visibility: hidden; }
 .c.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
+.period { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+.period select { font: inherit; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; }
+.period select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#rangeLabel { font-variant-numeric: tabular-nums; }
 .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 10px; justify-content: space-between; }
 .legend .keys { display: flex; align-items: center; gap: 4px; }
 .legend .c { cursor: default; }
@@ -82,7 +89,9 @@ header p { margin: 6px 0 0; color: var(--muted); }
 .d-date { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
 .d-rows { display: grid; grid-template-columns: 1fr auto; column-gap: 24px; row-gap: 4px; margin: 0; font-size: 14px; max-width: 300px; }
 .d-rows dt { color: var(--muted); }
-.d-rows dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.d-rows dd { margin: 0; display: grid; grid-template-columns: 4.2em 2.8em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.d-rows dd span { text-align: right; }
+.d-date { font-variant-numeric: tabular-nums; white-space: pre; }
 .d-rows .tot { color: var(--fg); font-weight: 700; }
 .d-rows .in { padding-left: 1.2em; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
@@ -148,6 +157,11 @@ body { margin: 0; }
       </div>
       <span class="updated" id="updated">読み込み中…</span>
     </div>
+    <div class="period">
+      <label for="period" class="period-k">期間</label>
+      <select id="period"><option value="recent">直近1年</option></select>
+      <span id="rangeLabel"></span>
+    </div>
     <div class="gridscroll" id="gridscroll">
       <div class="grid">
         <div></div>
@@ -157,7 +171,7 @@ body { margin: 0; }
       </div>
     </div>
     <div class="legend">
-      <span id="rangeLabel"></span>
+      <span></span>
       <span class="keys">少 <i class="c"></i><i class="c l1"></i><i class="c l2"></i><i class="c l3"></i><i class="c l4"></i> 多</span>
     </div>
     <div class="detail" id="detail">
@@ -174,10 +188,10 @@ body { margin: 0; }
   </section>
 
   <section class="stats" aria-label="集計">
-    <div class="stat"><div class="k">この1年の合計</div><div class="v" id="sTotal">0<small>時間</small></div></div>
-    <div class="stat"><div class="k">触った日数</div><div class="v" id="sDays">0<small>日</small></div></div>
+    <div class="stat"><div class="k" id="kTotal">直近1年の合計</div><div class="v" id="sTotal">0<small>時間</small></div></div>
+    <div class="stat"><div class="k" id="kDays">触った日数</div><div class="v" id="sDays">0<small>日</small></div></div>
     <div class="stat"><div class="k">いまの連続記録</div><div class="v" id="sStreak">0<small>日</small></div></div>
-    <div class="stat"><div class="k">最長連続記録</div><div class="v" id="sBest">0<small>日</small></div></div>
+    <div class="stat"><div class="k" id="kBest">最長連続記録</div><div class="v" id="sBest">0<small>日</small></div></div>
   </section>
 
   <section class="panel privacy">
@@ -226,13 +240,46 @@ body { margin: 0; }
   }
   function setStat(id, v, unit) { document.getElementById(id).innerHTML = v + "<small>" + unit + "</small>"; }
 
+  var period = "recent";
+  function firstDate() {
+    var first = null;
+    ["claude", "code", "cloud", "mac", "iphone"].forEach(function (k) {
+      Object.keys(data[k] || {}).forEach(function (d) { if (!first || d < first) first = d; });
+    });
+    return first;
+  }
+  // 選んだ期間の開始日・終了日と、表示用の名前
+  function range() {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    if (period === "recent") {
+      var s = new Date(today); s.setDate(s.getDate() - 364);
+      return { from: s, to: today, end: today, name: "直近1年" };
+    }
+    if (period === "all") {
+      var f = firstDate(), s2 = f ? new Date(f + "T00:00:00") : new Date(today);
+      return { from: s2, to: today, end: today, name: "全期間" };
+    }
+    var y = +period, s3 = new Date(y, 0, 1), e3 = new Date(y, 11, 31);
+    return { from: s3, to: e3 < today ? e3 : today, end: e3, name: y + "年" };
+  }
+  // 記録のある最初の年から今年まで、年ごとの選択肢を作る（年が変わると自動で増える）
+  function buildPeriods() {
+    var sel = document.getElementById("period"), now = new Date().getFullYear();
+    var f = firstDate(), y0 = f ? +f.slice(0, 4) : now;
+    var html = '<option value="recent">直近1年</option>';
+    for (var y = now; y >= y0; y--) html += '<option value="' + y + '">' + y + '年</option>';
+    html += '<option value="all">全期間</option>';
+    sel.innerHTML = html;
+    sel.value = period;
+  }
+
   function render() {
     var cells = document.getElementById("cells"), months = document.getElementById("months");
     cells.innerHTML = ""; months.innerHTML = "";
     var today = new Date(); today.setHours(0, 0, 0, 0);
-    var start = new Date(today); start.setDate(start.getDate() - 364);
-    start.setDate(start.getDate() - start.getDay());
-    var weeks = Math.ceil(((today - start) / 86400000 + 1) / 7);
+    var R = range();
+    var start = new Date(R.from); start.setDate(start.getDate() - start.getDay());
+    var weeks = Math.ceil(((R.end - start) / 86400000 + 1) / 7);
     var lastMonth = -1, frag = document.createDocumentFragment();
     for (var w = 0; w < weeks; w++) {
       var label = document.createElement("span");
@@ -244,7 +291,7 @@ body { margin: 0; }
         var day = new Date(start); day.setDate(day.getDate() + w * 7 + dw);
         var b = document.createElement("button");
         b.type = "button";
-        if (day > today) { b.className = "c out"; b.tabIndex = -1; frag.appendChild(b); continue; }
+        if (day > today || day < R.from || day > R.end) { b.className = "c out"; b.tabIndex = -1; frag.appendChild(b); continue; }
         var key = ymd(day), m = minutesFor(key);
         b.className = "c l" + level(m);
         b.dataset.d = key;
@@ -254,12 +301,11 @@ body { margin: 0; }
       }
     }
     cells.appendChild(frag);
-    var sc = document.getElementById("gridscroll"); sc.scrollLeft = sc.scrollWidth;
+    var sc = document.getElementById("gridscroll");
+    sc.scrollLeft = (R.to >= today) ? sc.scrollWidth : 0;
 
     var total = 0, days = 0, best = 0, run = 0, streak = 0;
-    var d0 = new Date(today); d0.setDate(d0.getDate() - 364);
-    for (var i = 0; i < 365; i++) {
-      var dd = new Date(d0); dd.setDate(dd.getDate() + i);
+    for (var dd = new Date(R.from); dd <= R.to; dd.setDate(dd.getDate() + 1)) {
       var mm = minutesFor(ymd(dd));
       total += mm;
       if (mm > 0) { days++; run++; if (run > best) best = run; } else run = 0;
@@ -267,24 +313,34 @@ body { margin: 0; }
     var cur = new Date(today);
     if (minutesFor(ymd(cur)) <= 0) cur.setDate(cur.getDate() - 1);
     while (minutesFor(ymd(cur)) > 0) { streak++; cur.setDate(cur.getDate() - 1); }
-    setStat("sTotal", (total / 60).toFixed(total < 600 ? 1 : 0), "時間");
+    var hrs = total / 60;
+    setStat("sTotal", hrs < 10 ? hrs.toFixed(1) : Math.round(hrs).toLocaleString("ja-JP"), "時間");
     setStat("sDays", days, "日");
     setStat("sStreak", streak, "日");
     setStat("sBest", best, "日");
-    document.getElementById("rangeLabel").textContent = "直近1年（" + ymd(d0).replace(/-/g, "/") + "〜）";
+    document.getElementById("kTotal").textContent = R.name + "の合計";
+    document.getElementById("kDays").textContent = R.name + "に触った日数";
+    document.getElementById("kBest").textContent = R.name + "の最長連続記録";
+    document.getElementById("rangeLabel").textContent = ymd(R.from).replace(/-/g, "/") + "〜" + ymd(R.to).replace(/-/g, "/");
   }
 
   var selDay = null;
+  // 桁数が変わっても位置がずれないよう、足りない桁を数字と同じ幅の空白（U+2007）で埋める
+  function pad2(n) { return (n < 10 ? "\u2007" : "") + n; }
+  function cellHtml(m) {
+    m = Math.round(m || 0);
+    var hh = Math.floor(m / 60), mm = m % 60;
+    return "<span>" + (hh ? hh + "時間" : "") + "</span><span>" + pad2(mm) + "分</span>";
+  }
   function showDay(d) {
     var p = parts(d), dt = new Date(d + "T00:00:00");
-    function f(m) { return m ? fmt(m) : "0分"; }
-    document.getElementById("dDate").textContent = (dt.getMonth() + 1) + "月" + dt.getDate() + "日（" + "日月火水木金土"[dt.getDay()] + "）" + (p.total ? "" : "　記録なし");
-    document.getElementById("vTotal").textContent = f(p.total);
-    document.getElementById("vClaude").textContent = f(p.claude);
-    document.getElementById("vCode").textContent = f(p.code);
-    document.getElementById("vApp").textContent = f(p.device);
-    document.getElementById("vMac").textContent = f(p.mac);
-    document.getElementById("vIphone").textContent = f(p.iphone);
+    document.getElementById("dDate").textContent = pad2(dt.getMonth() + 1) + "月" + pad2(dt.getDate()) + "日（" + "日月火水木金土"[dt.getDay()] + "）" + (p.total ? "" : "　記録なし");
+    document.getElementById("vTotal").innerHTML = cellHtml(p.total);
+    document.getElementById("vClaude").innerHTML = cellHtml(p.claude);
+    document.getElementById("vCode").innerHTML = cellHtml(p.code);
+    document.getElementById("vApp").innerHTML = cellHtml(p.device);
+    document.getElementById("vMac").innerHTML = cellHtml(p.mac);
+    document.getElementById("vIphone").innerHTML = cellHtml(p.iphone);
   }
   function markSel() {
     document.querySelectorAll(".c.sel").forEach(function (x) { x.classList.remove("sel"); });
@@ -299,6 +355,11 @@ body { margin: 0; }
     showDay(selDay);
   });
 
+  document.getElementById("period").addEventListener("change", function () {
+    period = this.value;
+    render();
+    markSel();
+  });
   document.querySelectorAll(".seg button").forEach(function (b) {
     b.dataset.label = b.textContent;
     b.addEventListener("click", function () {
@@ -323,6 +384,7 @@ body { margin: 0; }
           u.className = "updated stale";
         }
       } else { u.textContent = ""; }
+      buildPeriods();
       render();
       // 最初は今日の内訳を出しておく
       if (!selDay) { selDay = ymd(new Date()); }
