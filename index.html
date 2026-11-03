@@ -88,14 +88,20 @@ header p { margin: 6px 0 0; color: var(--muted); }
 .legend .c { cursor: default; }
 .detail { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
 .d-date { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
-.d-rows { display: grid; grid-template-columns: 1fr auto; column-gap: 32px; row-gap: 4px; margin: 0; font-size: 14px; }
-@media (min-width: 720px) { .d-rows { max-width: 440px; } }
-.d-rows dt { color: var(--muted); }
-.d-rows dd { margin: 0; display: grid; grid-template-columns: 4.2em 2.8em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.d-rows dd span { text-align: right; }
+.d-rows { display: grid; grid-template-columns: max-content 1fr auto; column-gap: 0; row-gap: 4px; margin: 0; font-size: 14px; line-height: 24px; align-items: center; }
+@media (min-width: 720px) { .d-rows { max-width: 520px; } }
+.d-rows dt { color: var(--muted); font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; padding-right: 16px; }
+.d-rows .bar { display: block; height: 6px; border-radius: 3px; background: var(--g0); overflow: hidden; }
+.d-rows .bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--g3); }
+.d-rows .bar.in i { background: var(--g2); }
+.d-rows .bar.tot { background: none; height: auto; align-self: stretch; border-radius: 0; }
+.d-rows dd { margin: 0; padding-left: 16px; text-align: right; font-variant-numeric: tabular-nums; white-space: pre; }
+.d-rows dd.zero { color: var(--muted); opacity: 0.6; }
 .d-date { font-variant-numeric: tabular-nums; white-space: pre; }
 .d-rows .tot { color: var(--fg); font-weight: 600; }
-.d-rows .in { padding-left: 16px; }
+.d-rows .tot { padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
+.d-rows dt.in { padding-left: 12px; }
+.d-rows dt.in::before { content: "└ "; color: var(--line); }
 .stats { display: block; }
 .stat.lead-stat .v { font-size: 32px; }
 .stat.lead-stat { flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; }
@@ -191,12 +197,12 @@ body { margin: 0; }
     <div class="detail" id="detail">
       <p class="d-date" id="dDate">マスをタップすると、その日の時間が出ます</p>
       <dl class="d-rows">
-        <dt class="tot">合計</dt><dd class="tot" id="vTotal">—</dd>
-        <dt>Claude</dt><dd id="vClaude">—</dd>
-        <dt>Claude Code</dt><dd id="vCode">—</dd>
-        <dt>アプリ時間</dt><dd id="vApp">—</dd>
-        <dt class="in">Mac</dt><dd id="vMac">—</dd>
-        <dt class="in">iPhone</dt><dd id="vIphone">—</dd>
+        <dt class="tot">合計</dt><span class="bar tot" aria-hidden="true"></span><dd class="tot" id="vTotal">—</dd>
+        <dt>Claude</dt><span class="bar" aria-hidden="true"><i id="bClaude"></i></span><dd id="vClaude">—</dd>
+        <dt>Claude Code</dt><span class="bar" aria-hidden="true"><i id="bCode"></i></span><dd id="vCode">—</dd>
+        <dt>アプリ時間</dt><span class="bar" aria-hidden="true"><i id="bApp"></i></span><dd id="vApp">—</dd>
+        <dt class="in">Mac</dt><span class="bar in" aria-hidden="true"><i id="bMac"></i></span><dd id="vMac">—</dd>
+        <dt class="in">iPhone</dt><span class="bar in" aria-hidden="true"><i id="bIphone"></i></span><dd id="vIphone">—</dd>
       </dl>
     </div>
   </section>
@@ -354,17 +360,22 @@ body { margin: 0; }
   function cellHtml(m) {
     m = Math.round(m || 0);
     var hh = Math.floor(m / 60), mm = m % 60;
-    return "<span>" + (hh ? hh + "時間" : "") + "</span><span>" + pad2(mm) + "分</span>";
+    // 「1時間 27分」「1時間  9分」「27分」のように、時間と分の間に半角スペースを入れ、右端で分の位置をそろえる
+    return (hh ? hh + "時間 " : "") + pad2(mm) + "分";
   }
   function showDay(d) {
     var p = parts(d), dt = new Date(d + "T00:00:00");
     document.getElementById("dDate").textContent = pad2(dt.getMonth() + 1) + "月" + pad2(dt.getDate()) + "日（" + "日月火水木金土"[dt.getDay()] + "）" + (p.total ? "" : "　記録なし");
-    document.getElementById("vTotal").innerHTML = cellHtml(p.total);
-    document.getElementById("vClaude").innerHTML = cellHtml(p.claude);
-    document.getElementById("vCode").innerHTML = cellHtml(p.code);
-    document.getElementById("vApp").innerHTML = cellHtml(p.device);
-    document.getElementById("vMac").innerHTML = cellHtml(p.mac);
-    document.getElementById("vIphone").innerHTML = cellHtml(p.iphone);
+    [["vTotal", p.total], ["vClaude", p.claude], ["vCode", p.code], ["vApp", p.device], ["vMac", p.mac], ["vIphone", p.iphone]].forEach(function (x) {
+      var el = document.getElementById(x[0]);
+      el.textContent = cellHtml(x[1]);
+      el.classList.toggle("zero", !Math.round(x[1] || 0));
+    });
+    // 中央の棒：その日の合計に対する割合
+    [["bClaude", p.claude], ["bCode", p.code], ["bApp", p.device], ["bMac", p.mac], ["bIphone", p.iphone]].forEach(function (x) {
+      var pct = p.total ? Math.min(100, (x[1] || 0) / p.total * 100) : 0;
+      document.getElementById(x[0]).style.width = pct + "%";
+    });
   }
   function markSel() {
     document.querySelectorAll(".c.sel").forEach(function (x) { x.classList.remove("sel"); });
