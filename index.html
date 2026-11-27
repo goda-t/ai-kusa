@@ -159,6 +159,19 @@ body { margin: 0; }
 .updated { font-variant-numeric: tabular-nums; }
 .updated.stale { color: var(--warn-fg); background: var(--warn-bg); padding: 2px 8px; border-radius: 6px; }
 .empty { font-size: 14px; color: var(--muted); }
+.monthly h2 { margin-bottom: 4px; }
+.monthly .lead { margin-bottom: 12px; font-size: 13px; }
+.mtable { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.mtable th { font-size: 12px; font-weight: 400; color: var(--muted); text-align: right; padding: 0 0 6px 12px; white-space: nowrap; }
+.mtable th:first-child, .mtable td:first-child { text-align: left; padding-left: 0; }
+.mtable td { text-align: right; padding: 8px 0 2px 12px; white-space: nowrap; }
+.mtable td.mm { font-weight: 600; }
+.mtable td.zero { color: var(--muted); opacity: 0.6; }
+.mtable tr.mbar td { padding: 0 0 8px; border-bottom: 1px solid var(--line); }
+.mtable tr.mbar:last-child td { border-bottom: 0; }
+.mtable .bar { display: block; height: 4px; border-radius: 2px; background: var(--g0); overflow: hidden; }
+.mtable .bar i { display: block; height: 100%; border-radius: 2px; background: var(--g3); }
+@media (max-width: 420px) { .mtable { font-size: 13px; } .mtable th, .mtable td { padding-left: 8px; } }
 </style>
 </head>
 <body>
@@ -222,10 +235,19 @@ body { margin: 0; }
     </div>
   </section>
 
+  <section class="panel monthly" aria-label="月ごとの集計">
+    <h2>月ごと</h2>
+    <p class="lead">1日平均は、その月の日数（今月は今日まで）で割った時間です</p>
+    <table class="mtable">
+      <thead><tr><th scope="col">月</th><th scope="col">合計</th><th scope="col">1日平均</th><th scope="col">触った日の平均</th><th scope="col">触った日</th></tr></thead>
+      <tbody id="mBody"></tbody>
+    </table>
+  </section>
+
   <section class="panel privacy">
     <h2>しくみ</h2>
     <ul>
-      <li>毎日12:00と23:50に、Macが集計してこのページを更新します（スリープ中なら起きたときに実行）</li>
+      <li>毎時0分に、Macが集計してこのページを更新します（スリープ中やWi-Fiがないときは、次の回にまとめて反映）</li>
       <li>Claude Code：Macで動かした分の作業ログから</li>
       <li>Mac・iPhone：Claudeアプリを手前で開いていた時間。Macは1分ごとに確認し、3分以上操作がなければ数えません</li>
       <li>Claude：claude.aiのデータエクスポートから、メッセージの間隔で推定（2026年10月30日まで取り込み済み）</li>
@@ -351,7 +373,39 @@ body { margin: 0; }
     document.getElementById("kTotal").textContent = R.name + "の合計";
     document.getElementById("kDays").textContent = "触った日数";
     document.getElementById("kBest").textContent = "最長連続";
+    renderMonths(R);
     document.getElementById("rangeLabel").textContent = ymd(R.from).replace(/-/g, "/") + "〜" + ymd(R.to).replace(/-/g, "/");
+  }
+
+  // 月ごとの合計・1日平均・触った日の平均・触った日数（新しい月が上）
+  function renderMonths(R) {
+    var rows = {}, order = [];
+    for (var d = new Date(R.from); d <= R.to; d.setDate(d.getDate() + 1)) {
+      var k = d.getFullYear() + "-" + (d.getMonth() + 1);
+      if (!rows[k]) { rows[k] = { y: d.getFullYear(), m: d.getMonth() + 1, total: 0, days: 0, span: 0 }; order.push(k); }
+      var v = minutesFor(ymd(d));
+      rows[k].span++;
+      rows[k].total += v;
+      if (v > 0) rows[k].days++;
+    }
+    // 記録が始まる前の空っぽの月は出さない
+    while (order.length > 1 && rows[order[0]].total <= 0) order.shift();
+    var max = 0;
+    order.forEach(function (k) { if (rows[k].total > max) max = rows[k].total; });
+    var multiYear = order.length && rows[order[0]].y !== rows[order[order.length - 1]].y;
+    var html = "";
+    order.reverse().forEach(function (k) {
+      var r = rows[k], z = r.total <= 0 ? ' class="zero"' : "";
+      var name = (multiYear || period === "recent" || period === "all") ? r.y + "/" + r.m + "月" : r.m + "月";
+      var hrs = r.total / 60;
+      html += "<tr><td class=\"mm\">" + name + "</td>" +
+        "<td" + z + ">" + (hrs < 10 ? hrs.toFixed(1) : Math.round(hrs)) + "時間</td>" +
+        "<td" + z + ">" + (r.span ? fmt(r.total / r.span) : "—") + "</td>" +
+        "<td" + z + ">" + (r.days ? fmt(r.total / r.days) : "—") + "</td>" +
+        "<td" + z + ">" + r.days + "日</td></tr>" +
+        "<tr class=\"mbar\"><td colspan=\"5\"><span class=\"bar\"><i style=\"width:" + (max ? r.total / max * 100 : 0) + "%\"></i></span></td></tr>";
+    });
+    document.getElementById("mBody").innerHTML = html;
   }
 
   var selDay = null;
